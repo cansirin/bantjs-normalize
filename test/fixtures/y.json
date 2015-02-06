@@ -1,0 +1,12 @@
+{
+  "id": "y",
+  "main": "foo",
+  "browserify": {
+    "expose": "bar",
+    "entry": false
+  },
+  "dependencies": [
+    "x",
+    "baz"
+  ]
+}

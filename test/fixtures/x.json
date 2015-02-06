@@ -1,0 +1,12 @@
+{
+  "id": "x",
+  "main": "foo",
+  "locals": [
+    "y"
+  ],
+  "dependencies": [
+    "//bar",
+    "../baz",
+    "foo"
+  ]
+}
