@@ -1,4 +1,4 @@
-# normalize
+# bant-normalize
 
 given an array of config files, turns them into bant-consumable objects.
 
