@@ -1,6 +1,7 @@
 var through = require('through2');
-var defined = require('defined');
 var path = require('path');
+var defined = require('defined');
+var toposort = require('toposort');
 
 
 module.exports = function (opts) {
@@ -24,7 +25,8 @@ module.exports = function (opts) {
 };
 
 function normalize (rows, opts) {
-  var self = this;
+  var self = this,
+      nodes = [], edges = [], index = {};
 
   rows.forEach(function (row, i) {
     var files = [],
@@ -33,6 +35,7 @@ function normalize (rows, opts) {
 
     row.basedir = basedir;
     row.id = defined(row.id, 'module_' + i);
+    row.locals = defined(row.locals, []);
 
     if (has(row, 'main')) {
       row.main = path.resolve(basedir, row.main);
@@ -48,8 +51,19 @@ function normalize (rows, opts) {
         return { file: path.resolve(basedir, file) };
       }));
     
-    self.push(row);
+    nodes.push(row.id);
+    row.locals.forEach(function (id) {
+      edges.push([row.id, id]);
+    });
+
+    index[row.id] = row;
   });
+
+  rows = toposort.array(nodes, edges).reverse().map(function (id) {
+    return index[id];
+  });
+
+  rows.forEach(function (row) { self.push(row); });
 
   self.push(null);
 }
