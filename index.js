@@ -38,17 +38,28 @@ function normalize (rows, opts) {
     row.locals = defined(row.locals, []);
 
     if (has(row, 'main')) {
-      row.main = path.resolve(basedir, row.main);
-      scripts.push({
+      var obj = {
         file: row.main,
         expose: defined(row.expose, row.id),
         entry: true
-      });
+      };
+
+      if (!isStream(row.main))
+        obj.file = path.resolve(basedir, row.main);
+      else
+        obj.basedir = basedir;
+
+      scripts.push(obj);
     }
     
     row.scripts = scripts.concat(defined(row.scripts, []).filter(Boolean)
       .map(function (file) {
-        return { file: path.resolve(basedir, file) };
+        var obj = { file: row.main };
+        if (!isStream(file))
+          obj.file = path.resolve(basedir, file);
+        else
+          obj.basedir = basedir;
+        return obj;
       }));
     
     nodes.push(row.id);
@@ -71,4 +82,6 @@ function normalize (rows, opts) {
 function isVinylBuffer (row) { return row && typeof row.isBuffer === 'function'; }
 
 function has (row, key) { return row && row.hasOwnProperty(key); }
+
+function isStream (s) { return s && typeof s.pipe === 'function'; }
 
