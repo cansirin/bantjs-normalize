@@ -10,16 +10,16 @@ test('toposort-locals', function (t) {
     rows.push(row);
     cb();
   }, function () {
-    t.equal(rows[0].id, 'w');
-    t.equal(rows[1].id, 'z');
-    t.equal(rows[2].id, 'y');
-    t.equal(rows[3].id, 'x');
+    t.equal(rows[0].name, 'w');
+    t.equal(rows[1].name, 'z');
+    t.equal(rows[2].name, 'y');
+    t.equal(rows[3].name, 'x');
     t.end();
   }));
 
-  tr.write({ id: 'x', locals: ['w', 'y'] });
-  tr.write({ id: 'y', locals: ['z'] });
-  tr.write({ id: 'z', locals: [] });
-  tr.write({ id: 'w' });
+  tr.write({ name: 'x', locals: ['w', 'y'] });
+  tr.write({ name: 'y', locals: ['z'] });
+  tr.write({ name: 'z', locals: [] });
+  tr.write({ name: 'w' });
   tr.end();
 });

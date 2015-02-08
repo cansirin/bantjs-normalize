@@ -9,7 +9,7 @@ test('vinyl', function (t) {
   fs.src([__dirname + '/vinyl/*.json'])
     .pipe(normalize())
     .pipe(through.obj(function (row, enc, cb) {
-      rows[row.id] = row;
+      rows[row.name] = row;
       cb();
     }, function () {
       t.equal(rows.x.basedir, __dirname + '/vinyl');

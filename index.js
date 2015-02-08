@@ -2,6 +2,7 @@ var through = require('through2');
 var path = require('path');
 var defined = require('defined');
 var toposort = require('toposort');
+var debug = require('debug')('bant:normalize');
 
 
 module.exports = function (opts) {
@@ -13,7 +14,7 @@ module.exports = function (opts) {
 
   function write (row, enc, cb) { 
     if (isVinylBuffer(row) && row.isBuffer()) {
-      var basedir = row.base;
+      var basedir = path.dirname(row.path);
       row = JSON.parse(row.contents);
       row.basedir = basedir;
     }
@@ -34,13 +35,13 @@ function normalize (rows, opts) {
         scripts = [];
 
     row.basedir = basedir;
-    row.id = defined(row.id, 'module_' + i);
+    row.name = defined(row.name, 'module_' + i);
     row.locals = defined(row.locals, []);
 
     if (has(row, 'main')) {
       var obj = {
         file: row.main,
-        expose: defined(row.expose, row.id),
+        expose: defined(row.expose, row.name),
         entry: true
       };
 
@@ -62,16 +63,16 @@ function normalize (rows, opts) {
         return obj;
       }));
     
-    nodes.push(row.id);
-    row.locals.forEach(function (id) {
-      edges.push([row.id, id]);
+    nodes.push(row.name);
+    row.locals.forEach(function (name) {
+      edges.push([row.name, name]);
     });
 
-    index[row.id] = row;
+    index[row.name] = row;
   });
 
-  rows = toposort.array(nodes, edges).reverse().map(function (id) {
-    return index[id];
+  rows = toposort.array(nodes, edges).reverse().map(function (name) {
+    return index[name];
   });
 
   rows.forEach(function (row) { self.push(row); });

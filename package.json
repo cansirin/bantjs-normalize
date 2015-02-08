@@ -7,6 +7,7 @@
     "test": "test"
   },
   "dependencies": {
+    "debug": "^2.1.1",
     "defined": "0.0.0",
     "through2": "^0.6.3",
     "toposort": "^0.2.10"
