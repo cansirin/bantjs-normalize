@@ -41,8 +41,7 @@ function normalize (rows, opts) {
     if (has(row, 'main')) {
       var obj = {
         file: row.main,
-        expose: defined(row.expose, row.name),
-        entry: true
+        expose: defined(row.expose, row.name)
       };
 
       if (!isStream(row.main))
@@ -50,6 +49,7 @@ function normalize (rows, opts) {
       else
         obj.basedir = basedir;
 
+      row.main = obj;
       scripts.push(obj);
     }
     

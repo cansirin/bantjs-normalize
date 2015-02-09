@@ -11,7 +11,6 @@ test('files', function (t) {
     cb();
   }, function () {
     t.equal(rows.x.scripts[0].file, __dirname + '/x.js');
-    t.equal(rows.x.scripts[0].entry, true);
     t.equal(rows.x.scripts[0].expose, rows.x.name);
     t.equal(rows.y.basedir, path.resolve(__dirname + '/../'));
     t.equal(rows.y.scripts.length, 2);
