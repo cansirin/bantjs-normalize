@@ -1,88 +1,62 @@
 var through = require('through2');
 var path = require('path');
 var defined = require('defined');
-var toposort = require('toposort');
 var debug = require('debug')('bant:normalize');
+var compact = require('bant-compact');
+var extend = require('util')._extend;
+var inherits = require('util').inherits;
+var Transform = require('readable-stream/transform');
 
 
-module.exports = function (opts) {
+module.exports = normalize;
+inherits(normalize, Transform);
+
+function normalize (opts) {
+  if (!(this instanceof normalize)) return new normalize(opts);
+  
   if (!opts) opts = {};
 
-  var rows = [];
+  this._opts = opts;
+  this._raw = [];
 
-  return through.obj(write, end);
-
-  function write (row, enc, cb) { 
-    if (isVinylBuffer(row) && row.isBuffer()) {
-      var basedir = path.dirname(row.path);
-      row = JSON.parse(row.contents);
-      row.basedir = basedir;
-    }
-    rows.push(row);
-    cb(); 
-  }
-
-  function end () { normalize.bind(this, rows, opts)(); }
-};
-
-function normalize (rows, opts) {
-  var self = this,
-      nodes = [], edges = [], index = {};
-
-  rows.forEach(function (row, i) {
-    var files = [],
-        basedir = path.resolve(defined(row.basedir, opts.basedir, process.cwd())),
-        scripts = [];
-
-    row.basedir = basedir;
-    row.name = defined(row.name, 'module_' + i);
-    row.locals = defined(row.locals, []);
-
-    if (has(row, 'main')) {
-      var obj = {
-        file: row.main,
-        expose: defined(row.expose, row.name)
-      };
-
-      if (!isStream(row.main))
-        obj.file = path.resolve(basedir, row.main);
-      else
-        obj.basedir = basedir;
-
-      row.main = obj;
-      scripts.push(obj);
-    }
-    
-    row.scripts = scripts.concat(defined(row.scripts, []).filter(Boolean)
-      .map(function (file) {
-        var obj = { file: row.main };
-        if (!isStream(file))
-          obj.file = path.resolve(basedir, file);
-        else
-          obj.basedir = basedir;
-        return obj;
-      }));
-    
-    nodes.push(row.name);
-    row.locals.forEach(function (name) {
-      edges.push([row.name, name]);
-    });
-
-    index[row.name] = row;
-  });
-
-  rows = toposort.array(nodes, edges).reverse().map(function (name) {
-    return index[name];
-  });
-
-  rows.forEach(function (row) { self.push(row); });
-
-  self.push(null);
+  Transform.call(this, { objectMode: true });
 }
 
-function isVinylBuffer (row) { return row && typeof row.isBuffer === 'function'; }
+normalize.prototype._transform = function (row, enc, cb) {
+  var basedir, opts = this._opts;
 
-function has (row, key) { return row && row.hasOwnProperty(key); }
+  if (isVinyl(row)) {
+    if (row.isStream()) throw 'not implemented';
+    else if (row.isBuffer()) {
+      basedir = path.dirname(row.path);
+      var vinyl = row.clone();
+      row = JSON.parse(row.contents);
+      row.vinyl = vinyl;
+      row.basedir = basedir;
+    }
+  }
 
-function isStream (s) { return s && typeof s.pipe === 'function'; }
+  row.name = defined(row.name, row.expose);
+
+  if ('string' === typeof row.name) {
+    row.expose = defined(row.expose, row.name);
+    row.basedir = path.resolve(defined(row.basedir, opts.basedir, process.cwd()));
+    this._raw.push(row);
+  }
+
+  cb();
+};
+
+normalize.prototype._flush = function (cb) {
+  var self = this,
+      tree = compact(this._raw);
+  
+  tree.forEach(function (branch) {
+    self.push(branch);
+  });
+
+  self.push(null);
+};
+
+function isVinyl (row) { return row && typeof row.isBuffer === 'function'; }
 
