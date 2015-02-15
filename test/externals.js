@@ -21,4 +21,5 @@ test('externals', function (t) {
   t.equal(index['a']._external, true);
   t.equal(index['k']._external, true);
   t.equal(externalsLen, 3);
+  t.end();
 });
