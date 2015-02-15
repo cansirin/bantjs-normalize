@@ -1,8 +1,9 @@
 var xtend = require('xtend');
 var defined = require('defined');
+var path = require('path');
 var debug = require('debug')('bant:normalize');
 var cluster = require('bant-cluster');
-var path = require('path');
+var wrap = require('bant-wrap');
 
 module.exports = function (arr, opts) {
   if (!opts) opts = {};
@@ -37,6 +38,7 @@ module.exports = function (arr, opts) {
     var external = find(clusters, node.name);
     if (external)
       node = xtend(node, external, { _external: true });
+    node._entry = wrap(node, opts);
     return node;
   });
 
