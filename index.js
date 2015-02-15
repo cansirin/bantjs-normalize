@@ -1,62 +1,60 @@
-var through = require('through2');
-var path = require('path');
+var xtend = require('xtend');
 var defined = require('defined');
 var debug = require('debug')('bant:normalize');
-var compact = require('bant-compact');
-var extend = require('util')._extend;
-var inherits = require('util').inherits;
-var Transform = require('readable-stream/transform');
+var cluster = require('bant-cluster');
+var path = require('path');
 
-
-module.exports = normalize;
-inherits(normalize, Transform);
-
-function normalize (opts) {
-  if (!(this instanceof normalize)) return new normalize(opts);
-  
+module.exports = function (arr, opts) {
   if (!opts) opts = {};
 
-  this._opts = opts;
-  this._raw = [];
+  var nodes = [];
 
-  Transform.call(this, { objectMode: true });
-}
-
-normalize.prototype._transform = function (row, enc, cb) {
-  var basedir, opts = this._opts;
-
-  if (isVinyl(row)) {
-    if (row.isStream()) throw 'not implemented';
-    else if (row.isBuffer()) {
-      basedir = path.dirname(row.path);
-      var vinyl = row.clone();
-      row = JSON.parse(row.contents);
-      row.vinyl = vinyl;
-      row.basedir = basedir;
+  arr.forEach(function (row) {
+    if (!row.main) {
+      debug('skipping ' + row.file + ' (missing main field)');
+      return;
     }
-  }
 
-  row.name = defined(row.name, row.expose);
+    if (!row.name) {
+      debug('skipping ' + row.file + ' (missing name field)');
+      return;
+    }
 
-  if ('string' === typeof row.name) {
-    row.expose = defined(row.expose, row.name);
-    row.basedir = path.resolve(defined(row.basedir, opts.basedir, process.cwd()));
-    this._raw.push(row);
-  }
+    var basedir = defined(row.basedir, opts.basedir, path.dirname(row.main));
 
-  cb();
-};
+    var node = xtend(row, {
+      main: path.resolve(basedir, row.main),
+      basedir: basedir,
+      expose: defined(row.expose, row.name)
+    });
 
-normalize.prototype._flush = function (cb) {
-  var self = this,
-      tree = compact(this._raw);
-  
-  tree.forEach(function (branch) {
-    self.push(branch);
+    nodes.push(node);
   });
 
-  self.push(null);
+  var clusters = cluster(nodes);
+
+  nodes = nodes.map(function (node) {
+    var external = find(clusters, node.name);
+    if (external)
+      node = xtend(node, external, { _external: true });
+    return node;
+  });
+
+  return nodes;
 };
 
-function isVinyl (row) { return row && typeof row.isBuffer === 'function'; }
+function find (arr, name) {
+  var ix = findIndex();
+  if (ix !== -1) return arr[ix];
 
+  function findIndex () {
+    var ix = -1,
+        len = arr ? arr.length : 0;
+
+    while (++ix < len) {
+      if (arr[ix].name === name)
+        return ix;
+    }
+    return -1;
+  }
+}
