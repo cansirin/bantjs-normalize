@@ -7,7 +7,7 @@
     "test": "test"
   },
   "dependencies": {
-    "bant-cluster": "^0.1.0",
+    "bant-cluster": "^0.2.0",
     "bant-wrap": "^0.1.0",
     "debug": "^2.1.1",
     "defined": "0.0.0",
