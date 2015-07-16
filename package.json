@@ -1,5 +1,5 @@
 {
-  "name": "bant-normalize",
+  "name": "@koding/bant-normalize",
   "version": "0.2.2",
   "description": "",
   "main": "index.js",
